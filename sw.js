@@ -6,12 +6,15 @@
 
   When adding a file to index.html, add it to FILES too and bump VERSION.
 */
-const VERSION = 'axolotl-colouring-v147';
+const VERSION = 'axolotl-colouring-v169';
 const FILES = [
   './',
   'index.html',
   'manifest.webmanifest',
+  'css/tokens.css',
   'css/app.css',
+  'css/fonts/fredoka-latin.woff2',
+  'css/fonts/nunito-latin.woff2',
   'js/util.js',
   'js/art.js',
   'js/raster/final-explorer.js',
@@ -138,6 +141,26 @@ const FILES = [
   'js/raster/final-wizard-treats.js',
   'js/raster/final-witchs-castle.js',
   'js/raster/final-costume-party.js',
+  'js/raster/final-hanging-baubles.js',
+  'js/raster/final-snowman-hug.js',
+  'js/raster/final-snowman-cuddle.js',
+  'js/raster/final-carrot-nose.js',
+  'js/raster/final-snowman-buttons.js',
+  'js/raster/final-building-a-snowman.js',
+  'js/raster/final-reindeer-fish.js',
+  'js/raster/final-jingle-bells.js',
+  'js/raster/final-gingerbread-baker.js',
+  'js/raster/final-trimming-the-tree.js',
+  'js/raster/final-snowman-pals.js',
+  'js/raster/final-pile-of-presents.js',
+  'js/raster/final-sleigh-dash.js',
+  'js/raster/final-tree-team.js',
+  'js/raster/final-gingerbread-house.js',
+  'js/raster/final-top-hat.js',
+  'js/raster/final-present-stack.js',
+  'js/raster/final-moonlight-sleigh.js',
+  'js/raster/final-christmas-party.js',
+  'js/raster/final-gingerbread-friend.js',
   'js/pages.js',
   'js/pages-v3.js',
   'js/characters.js',

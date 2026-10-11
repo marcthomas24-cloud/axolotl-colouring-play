@@ -70,11 +70,32 @@
     save:     '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/><path d="M12 10.5v5M9.5 13h5"/>',
   };
 
+  /* The solid icon set (polish pass): filled shapes with a 2px round outline of the same colour,
+     so every glyph has one weight and soft corners. Names start with "solid-". Details cut out of a
+     shape are drawn in the button's own background colour (`--bg`, set by .action-btn), so they
+     read as holes; `LINE` strokes stay open (no fill), `HOLE` strokes and `DOT` fills are the cut-outs.
+     Use these on UI.actionButton; the outline set above stays for screens not yet polished. */
+  const LINE = 'fill="none"';
+  const HOLE = 'style="fill:none;stroke:var(--bg,#fff)"';
+  const DOT = 'style="fill:var(--bg,#fff);stroke:none"';
+  const SOLID = {
+    'solid-crayon':  '<g transform="rotate(45 12 12)"><path d="M12 1.5 16 7v13.5a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V7z"/><path ' + HOLE + ' d="M8.8 11.5h6.4M8.8 16h6.4"/></g>',
+    'solid-axolotl': '<ellipse cx="12" cy="14" rx="7.2" ry="6"/><path ' + LINE + ' d="M6.2 11.2 3.2 6.6M5.4 13 1.9 10.2M5.2 15 1.8 14.4M17.8 11.2l3-4.6M18.6 13l3.5-2.8M18.8 15l3.4-.6"/>'
+                      + '<circle ' + DOT + ' cx="9.2" cy="13.2" r="1.25"/><circle ' + DOT + ' cx="14.8" cy="13.2" r="1.25"/><path ' + HOLE + ' d="M10.2 16.2q1.8 1.7 3.6 0"/>',
+    'solid-heart':   '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+    'solid-sound':   '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path ' + LINE + ' d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    'solid-mute':    '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path ' + LINE + ' d="M16 9.5l5 5M21 9.5l-5 5"/>',
+    'solid-lock':    '<rect x="4.5" y="10.5" width="15" height="10.5" rx="3"/><path ' + LINE + ' d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><circle ' + DOT + ' cx="12" cy="15" r="1.5"/><path ' + HOLE + ' d="M12 15.5v2"/>',
+  };
+
   function icon(name, extraClass) {
     const span = document.createElement('span');
     span.className = 'icon' + (extraClass ? ' ' + extraClass : '');
     span.setAttribute('aria-hidden', 'true');
-    span.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>';
+    const solid = SOLID[name];
+    span.innerHTML = solid
+      ? '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + solid + '</svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>';
     return span;
   }
 

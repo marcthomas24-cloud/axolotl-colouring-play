@@ -2,31 +2,17 @@
   'use strict';
   const { h } = U;
 
-  function sparkle(pos) {
-    const s = U.icon('create', 'sparkle');
-    Object.assign(s.style, pos);
-    s.querySelector('svg').setAttribute('fill', 'currentColor');
-    return s;
-  }
-
-  // Quick mute for the back of the car: one tap, no gate (muting is always safe).
+  // Sound: one tap, no gate (muting is always safe). Quick mute for the back of the car.
   function muteButton() {
-    const btn = UI.button({ icon: Store.settings.sound ? 'sound' : 'mute', variant: 'ghost', size: 'md', className: 'parents-link',
-      ariaLabel: Store.settings.sound ? 'Turn sound off' : 'Turn sound on',
+    const on = Store.settings.sound;
+    const btn = UI.actionButton({ variant: 'icon', colour: 'navy', icon: on ? 'solid-sound' : 'solid-mute',
+      ariaLabel: on ? 'Turn sound off' : 'Turn sound on',
       onClick: () => {
         Store.setSetting('sound', !Store.settings.sound);
         if (Store.settings.sound) Sound.play('pop'); else Speech.stop();
         btn.replaceWith(muteButton());
       } });
-    btn.setAttribute('aria-pressed', String(!Store.settings.sound));
-    return btn;
-  }
-
-  // Swap a button's icon for a small picture (a 4-year-old reads pictures, not words).
-  function withArt(btn, svg) {
-    const icon = btn.querySelector('.icon');
-    icon.classList.add('art-chip');
-    icon.innerHTML = svg;
+    btn.setAttribute('aria-pressed', String(!on));
     return btn;
   }
 
@@ -46,24 +32,22 @@
       const start = pages.length ? Math.floor(Math.random() * pages.length) : 0;
       const stop = Showcase.mount(showcase, pages.slice(start).concat(pages.slice(0, start)));
       const el = UI.screen('home',
-        h('div', { class: 'home-mute' }, muteButton()),
-        h('div', { class: 'home-parents' },
-          UI.button({ icon: 'settings', variant: 'ghost', size: 'md', ariaLabel: 'Grown-ups', to: 'parents', className: 'parents-link' })),
-        h('div', { class: 'home-hero' },
-          showcase,
-          sparkle({ top: '4%', left: '8%' }), sparkle({ top: '14%', right: '6%' }), sparkle({ top: '46%', left: '0%' }),
-          // Sticker wordmark; "Colouring" letters take turns through the palette.
-          h('h1', { class: 'wordmark', 'aria-label': 'Axolotl Colouring', tabindex: '-1' },
-            h('span', { class: 'w1', 'aria-hidden': 'true', 'data-text': 'Axolotl' }, 'Axolotl'),
-            h('span', { class: 'w2', 'aria-hidden': 'true', 'data-text': 'Colouring' }, Array.from('Colouring').map(c => h('b', null, c)))),
-        ),
-        h('nav', { class: 'home-actions', 'aria-label': 'Main' },
-          UI.button({ icon: 'palette', label: 'Colour', variant: 'primary', colour: 'pink', size: 'xl', to: 'gallery' }),
-          withArt(UI.button({ icon: 'create', label: 'Create', variant: 'primary', colour: 'teal', size: 'xl', to: 'create' }),
-            Art.character({ body: '#fff7fa', gills: '#ff8fb8' }, { crop: 'head' })),
-          withCount(UI.button({ icon: 'heart', label: 'My Axolotls', variant: 'primary', colour: 'purple', size: 'xl', to: 'collection' }),
-            Store.completed.length + Store.characters.length),
-        ),
+        // top-right: sound and the grown-ups area (the gate is on that screen)
+        h('div', { class: 'home-corner' }, muteButton(),
+          UI.actionButton({ variant: 'icon', colour: 'navy', icon: 'solid-lock', ariaLabel: 'Grown-ups', to: 'parents' })),
+        h('div', { class: 'home-main' },
+          // Logo lockup: a placeholder slot (see .home-logo in css/app.css); the wordmark stands in for now.
+          h('div', { class: 'home-logo', 'data-slot': 'logo' },
+            h('h1', { class: 'wordmark', 'aria-label': 'Axolotl Colouring', tabindex: '-1' },
+              h('span', { class: 'w1', 'aria-hidden': 'true', 'data-text': 'Axolotl' }, 'Axolotl'),
+              h('span', { class: 'w2', 'aria-hidden': 'true', 'data-text': 'Colouring' }, Array.from('Colouring').map(c => h('b', null, c))))),
+          h('nav', { class: 'home-actions', 'aria-label': 'Main' },
+            UI.actionButton({ variant: 'primary', icon: 'solid-crayon', label: 'Colour!', to: 'gallery' }),
+            h('div', { class: 'home-actions-row' },
+              UI.actionButton({ variant: 'secondary', colour: 'teal', icon: 'solid-axolotl', label: 'Create', to: 'create' }),
+              withCount(UI.actionButton({ variant: 'secondary', colour: 'pink', icon: 'solid-heart', label: 'My Axolotls', to: 'collection' }),
+                Store.completed.length + Store.characters.length))),
+          h('div', { class: 'home-art' }, showcase)),
       );
       el._destroy = stop;
       return el;

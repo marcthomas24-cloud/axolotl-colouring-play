@@ -1,0 +1,126 @@
+/*
+  Design tokens: the one place colours, type, spacing, radii and shadows are defined.
+  Direction and usage rules: docs/POLISH_BRIEF.md. Loaded before app.css.
+
+  Fonts are bundled (css/fonts/, SIL OFL 1.1, licences alongside) and never fetched from a
+  CDN: the app has to work offline and from file://. Both files are variable fonts, latin subset.
+*/
+@font-face {
+  font-family: 'Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap;
+  src: url(fonts/fredoka-latin.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap;
+  src: url(fonts/nunito-latin.woff2) format('woff2');
+}
+
+:root {
+  /* ── colour ──
+     Contrast (WCAG AA large text needs 3:1) is noted where a pairing is intended. */
+  --color-white: #ffffff;
+  --color-ink: #2b2238;            /* outline colour (matches INK in js/art.js) and body text; 15.1:1 on white */
+
+  --color-pink: #e8578f;           /* brand pink (axolotl); white label 3.4:1 */
+  --color-pink-dark: #c13f73;      /* pressed edge; white label 5.0:1 */
+  --color-pink-light: #ff8fb8;     /* the mascot's gills; ink label only (7.1:1), never white (2.1:1) */
+
+  --color-teal: #1f9e8f;           /* lagoon teal; white label 3.3:1 */
+  --color-teal-dark: #147a6e;      /* pressed edge; white label 5.2:1 */
+  --color-lagoon: #37bfb3;         /* top of the lagoon gradient; ink text only (6.7:1) */
+  --color-lagoon-deep: #0e5a66;    /* bottom of the lagoon gradient; white text 7.9:1 */
+
+  --color-navy: #14274e;           /* deep navy; white text 14.7:1, yellow 10.3:1 */
+
+  --color-navy-dark: #0b1730;      /* pressed edge under navy */
+
+  --color-wood: #c98b4f;           /* picture frame and easel; decoration only */
+  --color-wood-light: #e6b27a;
+  --color-wood-dark: #8a5630;
+  --color-cream: #fff6e0;          /* the mat inside a picture frame */
+
+  --color-yellow: #ffd35c;         /* sunshine yellow: the primary action only; ink label 10.6:1, never white */
+  --color-yellow-dark: #e0b43a;    /* pressed edge */
+
+  --color-grey-100: #f5f0f8;
+  --color-grey-200: #e7dcef;
+  --color-grey-300: #d9cfe3;
+  --color-grey-400: #b9adc6;       /* decoration only (2.1:1 on white) */
+  --color-grey-600: #6b5f7a;       /* secondary text; 5.9:1 on white */
+
+  --color-ink-rgb: 43, 34, 56;     /* for rgba() shadows and scrims */
+  --color-white-rgb: 255, 255, 255; /* for rgba() glass and highlights */
+
+  /* ── type ── */
+  --font-display: "Fredoka", ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Nunito", ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fw-display: 700;               /* Fredoka's heaviest */
+  --fw-display-soft: 600;
+  --fw-body: 700;
+  --fw-body-strong: 900;
+
+  --fs-hero: clamp(44px, 12vw, 68px);
+  --fs-xl: clamp(24px, 6vw, 30px);
+  --fs-lg: 22px;
+  --fs-md: 18px;
+  --fs-sm: 15px;
+  --fs-button: 20px;               /* smallest bold label on a coloured button (counts as WCAG large text) */
+
+  /* ── spacing: 4 px base ── */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+  --sp-7: 40px; --sp-8: 48px; --sp-9: 64px;
+
+  /* ── corner radius ── */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  /* ── shadow ──
+     Soft: a plain drop shadow.
+     Chunky: the solid bottom edge a button presses down into, plus a drop shadow under it.
+     The edge colour belongs to the element, so it is composed there, not here:
+       box-shadow: 0 var(--chunk) 0 var(--edge), var(--shadow-chunky-drop);
+       pressed:    0 var(--chunk-pressed) 0 var(--edge), var(--shadow-chunky-drop-pressed); */
+  --shadow-soft: 0 10px 30px rgba(var(--color-ink-rgb), .10);
+  --shadow-soft-sm: 0 4px 10px rgba(var(--color-ink-rgb), .10);
+  --chunk: 6px;
+  --chunk-pressed: 1px;
+  --shadow-chunky-drop: 0 12px 22px rgba(var(--color-ink-rgb), .12);
+  --shadow-chunky-drop-pressed: 0 4px 10px rgba(var(--color-ink-rgb), .10);
+
+  /* ── touch ── */
+  --tap-min: 56px;                 /* minimum tap target for anything interactive */
+
+  --ease-bounce: cubic-bezier(.34, 1.56, .64, 1);
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  /* ── legacy names ──
+     What app.css was written against, with the values it has always had, so screens that
+     haven't had their polish pass look exactly as before. Move a screen onto the names
+     above as it is polished; don't use these in new work. */
+  --ink: var(--color-ink);
+  --ink-soft: var(--color-grey-600);
+  --bg-top: #dff6f5;
+  --bg-bottom: #ffe6f0;
+  --surface: var(--color-white);
+  --surface-soft: #fff8fb;
+  --line: #eadff0;
+  --pink: var(--color-pink);     --pink-dark: var(--color-pink-dark);
+  --teal: var(--color-teal);     --teal-dark: var(--color-teal-dark);
+  --purple: #7c69ee;             --purple-dark: #5c4bc9;
+  --green: #2fa65c;              --green-dark: #1f8045;
+  --orange: #f08a2c;
+  --yellow: var(--color-yellow);
+  --edge-white: var(--color-grey-200);  /* the "candy" bottom edge under white surfaces */
+  --tray: rgba(255, 255, 255, .72);
+  --shadow: 0 6px 0 var(--edge-white), 0 14px 28px rgba(var(--color-ink-rgb), .10);
+  --shadow-press: 0 1px 0 var(--edge-white), 0 4px 10px rgba(var(--color-ink-rgb), .08);
+  --tap: 64px;                   /* the older, larger child touch target */
+  --gutter: 16px;
+  /* Unpolished screens keep the system rounded face (no bundled font) until their pass. */
+  --font: ui-rounded, "SF Pro Rounded", "Varela Round", system-ui, -apple-system, "Segoe UI", sans-serif;
+}

@@ -1,50 +1,4 @@
-/* ── tokens ── */
-:root {
-  --ink: #2b2238;
-  --ink-soft: #6b5f7a;
-  --bg-top: #dff6f5;
-  --bg-bottom: #ffe6f0;
-  --surface: #ffffff;
-  --surface-soft: #fff8fb;
-  --line: #eadff0;
-
-  /* Button colours are deep enough for white bold labels (≥3:1, large text). */
-  --pink: #e8578f;   --pink-dark: #c13f73;
-  --teal: #1f9e8f;   --teal-dark: #147a6e;
-  --purple: #7c69ee; --purple-dark: #5c4bc9;
-  --green: #2fa65c;  --green-dark: #1f8045;
-  --yellow: #ffd35c;
-
-  --edge-white: #e7dcef;  /* the "candy" bottom edge under white surfaces */
-  --tray: rgba(255, 255, 255, .72);
-
-  --radius-lg: 28px;
-  --radius-md: 20px;
-  --shadow: 0 6px 0 var(--edge-white), 0 14px 28px rgba(43, 34, 56, .10);
-  --shadow-soft: 0 10px 30px rgba(43, 34, 56, .10);
-  --shadow-press: 0 1px 0 var(--edge-white), 0 4px 10px rgba(43, 34, 56, .08);
-
-  /* type scale */
-  --fs-hero: clamp(44px, 12vw, 68px);
-  --fs-xl: clamp(24px, 6vw, 30px);
-  --fs-lg: 22px;
-  --fs-md: 18px;
-  --fs-sm: 15px;
-
-  /* spacing scale */
-  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
-
-  --tap: 64px;          /* minimum child touch target */
-  --gutter: 16px;
-  --ease-bounce: cubic-bezier(.34, 1.56, .64, 1);
-
-  --safe-t: env(safe-area-inset-top, 0px);
-  --safe-r: env(safe-area-inset-right, 0px);
-  --safe-b: env(safe-area-inset-bottom, 0px);
-  --safe-l: env(safe-area-inset-left, 0px);
-
-  --font: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, -apple-system, "Segoe UI", sans-serif;
-}
+/* Tokens (colours, fonts, spacing, radii, shadows) live in css/tokens.css, loaded first. */
 
 /* ── base ── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -168,6 +122,51 @@ button:focus-visible, input:focus-visible, [role="switch"]:focus-visible { outli
 .btn-colour-green  { --bg: var(--green);  --edge: var(--green-dark); }
 .btn-ghost { --bg: rgba(255,255,255,.72); --edge: rgba(231,220,239,.9); }
 
+/* ── action buttons (polish pass) ──
+   The button for polished screens: UI.actionButton in js/components.js, rules in
+   docs/POLISH_BRIEF.md. Sits beside .btn until every screen has moved over.
+   Each variant sets --bg / --edge / --fg; nothing here is smaller than --tap-min. */
+.action-btn {
+  --bg: var(--color-white); --edge: var(--color-grey-200); --fg: var(--color-ink);
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: var(--tap-min); min-width: var(--tap-min);
+  padding: 0 var(--sp-5);
+  border: 0; border-radius: var(--radius-pill);
+  font-family: var(--font-display); font-weight: var(--fw-display); font-size: var(--fs-button); line-height: 1.1;
+  cursor: pointer;
+  background: var(--bg); color: var(--fg);
+  box-shadow: 0 var(--chunk) 0 var(--edge), var(--shadow-chunky-drop), inset 0 2px 0 rgba(var(--color-white-rgb), .45);
+  transition: transform .09s ease, box-shadow .09s ease, opacity .2s;
+}
+.action-btn:active:not(:disabled) {
+  transform: translateY(calc(var(--chunk) - var(--chunk-pressed)));
+  box-shadow: 0 var(--chunk-pressed) 0 var(--edge), var(--shadow-chunky-drop-pressed), inset 0 2px 0 rgba(var(--color-white-rgb), .45);
+}
+@media (hover: hover) { .action-btn:hover:not(:disabled) { filter: brightness(1.03); } }
+.action-btn:focus-visible { outline: 4px solid var(--color-yellow); outline-offset: 4px; }
+.action-btn:disabled { opacity: .38; cursor: default; box-shadow: 0 3px 0 var(--edge); }
+.action-btn .icon { width: 1.4em; height: 1.4em; }
+
+/* primary: the one big yellow call to action on a screen; ink label, icon on the left */
+.action-btn-primary {
+  --bg: var(--color-yellow); --edge: var(--color-yellow-dark); --fg: var(--color-ink);
+  min-height: 72px; padding: 0 var(--sp-6); gap: var(--sp-3);
+  font-size: var(--fs-xl);
+}
+.action-btn-primary .icon { width: 1.5em; height: 1.5em; }
+
+/* secondary: smaller, brand pink or lagoon teal, white label */
+.action-btn-secondary { --fg: var(--color-white); }
+.action-btn-pink { --bg: var(--color-pink); --edge: var(--color-pink-dark); }
+.action-btn-teal { --bg: var(--color-teal); --edge: var(--color-teal-dark); }
+.action-btn-navy { --bg: var(--color-navy); --edge: var(--color-navy-dark); --fg: var(--color-white); }   /* icon buttons that must stand out on anything */
+
+/* icon: round, exactly the minimum tap target, no label (needs an aria-label) */
+.action-btn-icon { width: var(--tap-min); height: var(--tap-min); padding: 0; border-radius: 50%; }
+.action-btn-icon .icon { width: 28px; height: 28px; }
+.action-btn-icon.action-btn-pink, .action-btn-icon.action-btn-teal { --fg: var(--color-white); }
+
 .btn-tool.is-active { --bg: var(--ink); --edge: #0f0a16; --fg: #fff; }
 .btn-tool.is-active .icon { animation: boing .35s var(--ease-bounce); }
 
@@ -237,64 +236,113 @@ button:focus-visible, input:focus-visible, [role="switch"]:focus-visible { outli
 .art-card.nope .need-dots i:nth-child(3) { animation-delay: .16s; }
 @keyframes nope { 0%, 100% { transform: none; } 20% { transform: translateX(-7px) rotate(-8deg); } 40% { transform: translateX(7px) rotate(8deg); } 60% { transform: translateX(-5px); } 80% { transform: translateX(4px); } }
 
-/* home: a picture instead of an icon */
-.home-actions .btn .icon.art-chip { padding: 2px; background: rgba(255,255,255,.85); }
-.icon.art-chip svg { width: 100%; height: 100%; }
-
-/* ── home ── */
-.screen-home { align-items: center; justify-content: center; gap: clamp(16px, 4vh, 40px); position: relative; }
-.home-parents { position: absolute; top: calc(var(--safe-t) + 12px); right: calc(var(--safe-r) + 12px); }
-.parents-link { opacity: .55; min-width: 52px; min-height: 52px; box-shadow: none; } /* deliberately quiet: grown-ups only */
-.home-hero { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); }
-.home-hero-art { position: relative; width: min(58vw, 38vh, 320px); aspect-ratio: 1; }
-.home-hero-art::before { /* a soft glowing pond behind the mascot */
-  content: ""; position: absolute; inset: 6% 4% 2%; border-radius: 50%;
-  background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.95), rgba(255,255,255,.45) 55%, transparent 72%);
+/* ── home ──
+   The title screen (js/screens/home.js). Portrait: logo at the top, the picture frame in the
+   middle, the buttons at the bottom within thumb reach. Landscape: logo and buttons on the left
+   (55%), the frame on the right (45%). Sized from the screen (vw / vh / container units), not from
+   a list of devices; every control is at least --tap-min. Safe-area insets come from .screen. */
+.screen-home {
+  --home-icon: clamp(var(--tap-min), 6.5vh, 88px);   /* the round sound / grown-ups buttons */
+  position: relative;
+  padding-top: calc(var(--safe-t) + var(--home-icon) + var(--sp-5));   /* room for those buttons */
+  padding-bottom: calc(var(--safe-b) + var(--sp-4));
+  font-family: var(--font-body);
 }
-.home-hero-art svg { position: relative; width: 100%; height: 100%; display: block; }
-.home-hero .sparkle { position: absolute; color: var(--yellow); width: 30px; height: 30px; animation: twinkle 2.6s ease-in-out infinite; }
-.home-hero .sparkle:nth-of-type(2) { width: 22px; height: 22px; color: #fff; animation-delay: -1.3s; }
-.home-hero .sparkle:nth-of-type(3) { width: 18px; height: 18px; color: var(--pink); animation-delay: -.6s; }
+/* no drifting bubbles on this screen: the frame is the one thing to look at */
+body[data-screen="home"] .backdrop i { display: none; }
 
-/* Wordmark: sticker lettering with a thick white outline. */
-.wordmark { margin: 0; text-align: center; line-height: .92; font-weight: 900; letter-spacing: -.02em; }
+.home-corner {
+  position: absolute; z-index: 2; display: flex; gap: var(--sp-3);
+  top: calc(var(--safe-t) + var(--sp-3)); right: calc(var(--safe-r) + var(--sp-3));
+}
+.home-corner .action-btn-icon { width: var(--home-icon); height: var(--home-icon); }
+.home-corner .action-btn-icon .icon { width: calc(var(--home-icon) * .5); height: calc(var(--home-icon) * .5); }
+
+.home-main {
+  --home-col: min(100%, max(560px, 62vw));      /* width of the logo and of the buttons under it */
+  flex: 1; min-height: 0; min-width: 0;
+  display: grid; justify-items: center; row-gap: var(--sp-4);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "logo" "art" "actions";
+}
+
+/* Logo lockup. PLACEHOLDER SLOT: the wordmark below stands in until the real logo arrives; put the
+   final logo (an <img> or inline SVG) inside .home-logo and delete the .wordmark rules. */
+.home-logo { grid-area: logo; width: var(--home-col); container-type: inline-size; align-self: center; padding-bottom: .04em; }
+.wordmark { margin: 0; text-align: center; line-height: .95; font-family: var(--font-display); font-weight: var(--fw-display); letter-spacing: -.02em; }
 .wordmark span { position: relative; z-index: 0; display: block; }
 /* The white sticker outline is one layer behind the whole word, so a letter's outline
    never paints over its neighbour (each letter of "Colouring" is its own element). */
 .wordmark span::before {
   content: attr(data-text); position: absolute; inset: 0; z-index: -1;
-  color: #fff; -webkit-text-stroke: 12px #fff;
-  text-shadow: 0 6px 0 var(--edge-white), 0 12px 24px rgba(43,34,56,.12);
+  color: var(--color-white); -webkit-text-stroke: .15em var(--color-white);
+  text-shadow: 0 .07em 0 var(--color-grey-200), 0 .14em .28em rgba(var(--color-ink-rgb), .12);
 }
-.wordmark .w1 { font-size: var(--fs-hero); color: var(--pink); }
-.wordmark .w2 { font-size: calc(var(--fs-hero) * .7); color: var(--teal-dark); margin-top: 2px; }
-.wordmark .w2 b:nth-child(4n+1) { color: var(--teal); }
+.wordmark .w1 { font-size: 22cqw; color: var(--color-pink); }
+.wordmark .w2 { font-size: 17.5cqw; color: var(--color-teal-dark); margin-top: .03em; }
+.wordmark .w2 b:nth-child(4n+1) { color: var(--color-teal); }
 .wordmark .w2 b:nth-child(4n+2) { color: var(--purple); }
-.wordmark .w2 b:nth-child(4n+3) { color: #f08a2c; }
-.wordmark .w2 b:nth-child(4n+4) { color: var(--pink); }
+.wordmark .w2 b:nth-child(4n+3) { color: var(--orange); }
+.wordmark .w2 b:nth-child(4n+4) { color: var(--color-pink); }
 .wordmark b { font-weight: inherit; }
 
-.home-actions { display: flex; flex-direction: column; gap: var(--sp-4); width: min(100%, 420px); }
-.home-actions .btn { width: 100%; justify-content: flex-start; padding-left: .5em; gap: .6em; }
-.home-actions .btn .icon { /* icon sits in a soft chip */
-  width: 64px; height: 64px; padding: 14px; border-radius: 50%;
-  background: rgba(255,255,255,.28); box-shadow: inset 0 -3px 0 rgba(0,0,0,.06);
-}
-.home-actions .btn:nth-child(1) { animation: rise-in .5s .05s var(--ease-bounce) both; }
-.home-actions .btn:nth-child(2) { animation: rise-in .5s .12s var(--ease-bounce) both; }
-.home-actions .btn:nth-child(3) { animation: rise-in .5s .19s var(--ease-bounce) both; }
+/* Buttons: one big yellow primary, two secondaries side by side. They grow with the screen's height. */
+.home-actions { grid-area: actions; width: var(--home-col); display: flex; flex-direction: column; gap: var(--sp-4); }
+.home-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.home-actions .action-btn { width: 100%; padding-inline: var(--sp-2); gap: var(--sp-2); }
+.home-actions .action-btn .btn-label { text-wrap: balance; }
+.home-actions .action-btn-primary { min-height: clamp(72px, 9vh, 112px); font-size: clamp(var(--fs-xl), 3.4vh, 44px); }
+.home-actions .action-btn-secondary { min-height: clamp(var(--tap-min), 7vh, 88px); font-size: clamp(var(--fs-button), min(2.6vh, 4.6vw), 32px); }
+/* the icon of every button is the same solid style */
+.home-actions .action-btn .icon { flex: none; width: 1.5em; height: 1.5em; }
+.home-actions .action-btn-secondary .icon { width: 1.3em; height: 1.3em; }
 
-@media (orientation: landscape) and (max-height: 820px) {
-  .screen-home { flex-direction: row; gap: clamp(24px, 5vw, 64px); }
+/* The picture frame sits in its own cell and takes the largest 6:5 box that fits it, with room for the tilt. */
+.home-art {
+  grid-area: art; container-type: size; min-width: 0; min-height: 0; justify-self: stretch; align-self: stretch;
+  display: grid; place-items: center;
 }
-@media (orientation: landscape) and (max-height: 560px) {
-  .screen-home { flex-direction: row; }
-  .home-hero-art { width: min(36vw, 48vh); }
-  .wordmark .w1 { font-size: clamp(30px, 8vh, 48px); }
-  .wordmark .w2 { font-size: clamp(22px, 5.6vh, 34px); }
-  .home-actions .btn-xl { min-height: 76px; }
-  .home-actions .btn .icon { width: 56px; height: 56px; padding: 12px; }
+.home-hero-art.showcase {
+  --frame-w: clamp(10px, 2.4vmin, 30px);        /* wood on every side */
+  position: relative; width: min(94cqw, calc(88cqh * var(--art-aspect, 1.2))); aspect-ratio: var(--art-aspect, 1.2);   /* the shape js/showcase.js gives each picture */
 }
+
+@media (orientation: landscape) {
+  .screen-home { padding-top: calc(var(--safe-t) + var(--sp-2)); }
+  .home-main {
+    --home-col: min(100%, 43vw, 150vh);         /* the logo lockup: about 43% of the screen's width */
+    row-gap: 0; column-gap: var(--sp-5);
+    grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);
+    grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+    grid-template-areas: ". art" "logo art" "actions art" ". art";
+  }
+  .home-logo { align-self: end; margin-bottom: var(--sp-5); }
+  .home-actions { align-self: start; }
+  .home-art { padding: calc(var(--home-icon) + var(--sp-3)) var(--sp-2) var(--sp-2); }   /* clear of the corner buttons */
+}
+
+/* ── the frame: a chunky wooden picture frame, tilted, around the auto-colour demo ──
+   Even wood on all sides, then a cream mat, then the picture (js/showcase.js fills the canvas). */
+.showcase-frame {
+  position: absolute; inset: 0; padding: 0; cursor: pointer; overflow: hidden;
+  rotate: -3deg; transition: opacity .45s ease;
+  border: var(--frame-w) solid transparent; border-radius: var(--radius-lg);
+  background:
+    repeating-linear-gradient(97deg, rgba(var(--color-ink-rgb), .06) 0 2px, transparent 2px 11px) border-box,
+    linear-gradient(145deg, var(--color-wood-light), var(--color-wood) 48%, var(--color-wood-dark)) border-box;
+  box-shadow: 0 var(--chunk) 0 var(--color-wood-dark), 0 24px 40px rgba(var(--color-ink-rgb), .22);
+}
+.showcase-frame.is-fading { opacity: 0; }
+.showcase-frame::after {                          /* the mat, over the picture's edge, equal all round */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border: calc(var(--frame-w) * .7) solid var(--color-cream);
+  box-shadow: inset 0 3px 8px rgba(var(--color-ink-rgb), .3);
+}
+/* canvas and line art are squares; showcase.js sizes and offsets them so only the drawing shows */
+.showcase-frame canvas, .showcase-frame img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+.showcase-paint { background: var(--color-white); }
+.showcase-lines { mix-blend-mode: multiply; }
 
 /* ── cards ── */
 .card-grid {
@@ -593,9 +641,9 @@ button.art-card:active { transform: translateY(5px); box-shadow: var(--shadow-pr
   border-radius: 999px; background: var(--pink); color: #fff; font-size: 16px; font-weight: 900;
   box-shadow: 0 3px 0 var(--pink-dark);
 }
-.count-badge.on-button { /* on Home's My Axolotls button */
-  position: absolute; right: 16px; top: 50%; margin: -17px 0 0; height: 34px; min-width: 34px;
-  background: #fff; color: var(--purple-dark); box-shadow: 0 3px 0 rgba(0,0,0,.12);
+.count-badge.on-button { /* on Home's My Axolotls button: a small tag on its corner */
+  position: absolute; right: -6px; top: -10px; margin: 0; height: 32px; min-width: 32px;
+  background: var(--color-white); color: var(--color-ink); box-shadow: 0 3px 0 var(--color-ink);
 }
 
 /* pictures sit on the shelf like little snapshots, each at a slight tilt */
@@ -772,7 +820,6 @@ button.art-card:active { transform: translateY(5px); box-shadow: var(--shadow-pr
 }
 
 /* ── grown-ups ── */
-.home-mute { position: absolute; top: calc(var(--safe-t) + 12px); left: calc(var(--safe-l) + 12px); }
 .panel .switch-row + .switch-row { border-top: 2px solid #f3ecf6; }
 .switch-row .label { flex: 1; min-width: 0; align-items: flex-start; }
 .switch-row .label > .icon { margin-top: 2px; }
@@ -905,54 +952,6 @@ button.art-card:active { transform: translateY(5px); box-shadow: var(--shadow-pr
 /* gallery shelves */
 .gallery-shelf + .gallery-shelf { margin-top: 28px; }
 .gallery-shelf .section-title { margin-left: 4px; }
-
-/* home showcase: an illustrated page colouring itself in (js/showcase.js) */
-.home-hero-art.showcase { aspect-ratio: 6 / 5; width: min(72vw, 40vh * 1.2, 420px); }
-.home-hero-art.showcase::before { display: none; }
-.showcase-frame {
-  position: absolute; inset: 0; padding: 0; border: 6px solid #fff; border-radius: 26px; overflow: hidden;
-  background: #fff; cursor: pointer; rotate: -2deg; box-shadow: 0 6px 0 var(--edge-white), 0 18px 36px rgba(43,34,56,.16);
-  transition: opacity .45s ease;
-}
-.showcase-frame.is-fading { opacity: 0; }
-/* the art is drawn wider than tall inside a square image: crop the white margins */
-.showcase-frame canvas, .showcase-frame img { position: absolute; left: 0; top: -10%; width: 100%; height: 120%; display: block; }
-.showcase-lines { mix-blend-mode: multiply; }
-@media (orientation: landscape) and (max-height: 820px) { .home-hero-art.showcase { width: min(40vw, 55vh * 1.2); } }
-/* The corner buttons (sound, grown-ups) get their own band at the top of the home screen, so
-   neither the picture nor the big buttons can slide under them on any screen size. */
-.screen-home { padding-top: calc(var(--safe-t) + 72px); }
-@media (max-width: 480px) and (orientation: portrait) { .home-hero-art.showcase { width: min(66vw, 30vh * 1.2); } }
-/* short phones (iPhone SE): smaller picture, wordmark and buttons so all three buttons fit */
-@media (orientation: portrait) and (max-height: 700px) {
-  .home-hero-art.showcase { width: min(54vw, 24vh * 1.2); }
-  .screen-home { gap: 14px; }
-  .wordmark .w1 { font-size: 40px; }
-  .wordmark .w2 { font-size: 28px; }
-  .home-actions { gap: 12px; }
-  .home-actions .btn-xl { min-height: 66px; }
-  .home-actions .btn .icon { width: 50px; height: 50px; padding: 10px; }
-}
-/* phones held sideways: the picture beside the buttons, both below the corner band */
-@media (orientation: landscape) and (max-height: 560px) {
-  .screen-home { padding-top: calc(var(--safe-t) + 60px); padding-bottom: 12px; }
-  .home-hero-art.showcase { width: min(34vw, (100vh - 160px) * 1.2); }
-  .home-actions { gap: 10px; }
-  .home-actions .btn-xl { min-height: 64px; }
-}
-/* large iPads: the home screen grows with the screen instead of sitting small in the middle */
-@media (min-width: 900px) and (min-height: 1100px) and (orientation: portrait) {
-  .home-hero-art.showcase { width: min(62vw, 600px); }
-  .home-actions { width: min(100%, 540px); }
-  .wordmark .w1 { font-size: 92px; }
-  .wordmark .w2 { font-size: 64px; }
-  .home-actions .btn-xl { min-height: 104px; font-size: 32px; }
-  .home-actions .btn .icon { width: 76px; height: 76px; padding: 16px; }
-}
-@media (min-width: 1200px) and (min-height: 900px) and (orientation: landscape) {
-  .home-hero-art.showcase { width: min(44vw, 620px); }
-  .home-actions { width: min(100%, 500px); }
-}
 
 /* ── Colour picker (Pass 11): one big card per category ──
    Readable without words: thumbnail + an open / padlock bubble. Easy is first and biggest. */

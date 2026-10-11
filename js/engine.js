@@ -103,60 +103,155 @@
     });
 
     const px = ctx.getImageData(0, 0, SIZE, SIZE).data;
-    const labels = new Uint8Array(SIZE * SIZE);
-    const count = new Uint32Array(ids.length);
-    for (let i = 0, j = 0; i < labels.length; i++, j += 4) {
+    const raw = new Uint8Array(SIZE * SIZE);
+    for (let i = 0, j = 0; i < raw.length; i++, j += 4) {
       const r = px[j];
       if (r && (r & 3) === 0 && px[j + 1] === r && px[j + 2] === r && px[j + 3] === 255) {
         const l = r >> 2;
-        if (l < ids.length) { labels[i] = l; count[l]++; }
+        if (l < ids.length) raw[i] = l;
       }
     }
+    const labels = tidySeams(raw, SIZE, ids.length);
+    return { size: SIZE, labels, regions: regionTable(labels, SIZE, ids.length, l => ({ id: ids[l], group: groups[l - 1] || null })) };
+  }
 
-    // Per-region pixel lists + bounding boxes, so a fill never scans the whole canvas.
-    const regions = ids.map((id, l) => ({ id, group: groups[l - 1] || null, pixels: new Uint32Array(count[l]), n: 0, x0: SIZE, y0: SIZE, x1: -1, y1: -1 }));
-    for (let i = 0; i < labels.length; i++) {
-      const l = labels[i];
+  /* The canvas anti-aliases each shape's edge, so the pixels along it decode as no region, or,
+     where two shapes blend, as some third region's grey: a hairline of the wrong label that
+     filling that region would colour, and that stretches its bounding box across the page.
+       1. keep only pixels whose four neighbours agree (drops the hairlines and the seam);
+       2. grow every region back out by SEAM px (scaled to the map), meeting its neighbour
+          halfway, so a fill runs under the outline drawn over the seam and leaves no halo.
+     A region too thin to survive step 1 keeps its original pixels. */
+  const SEAM = 3;
+  function tidySeams(raw, SIZE, count) {
+    const N = SIZE * SIZE, labels = new Uint8Array(N), kept = new Uint32Array(count);
+    for (let i = 0; i < N; i++) {
+      const l = raw[i];
       if (!l) continue;
-      const r = regions[l];
-      r.pixels[r.n++] = i;
-      const x = i % SIZE, y = (i / SIZE) | 0;
-      if (x < r.x0) r.x0 = x; if (x > r.x1) r.x1 = x;
-      if (y < r.y0) r.y0 = y; if (y > r.y1) r.y1 = y;
+      const x = i % SIZE;
+      if ((x > 0 && raw[i - 1] !== l) || (x < SIZE - 1 && raw[i + 1] !== l) || (i >= SIZE && raw[i - SIZE] !== l) || (i < N - SIZE && raw[i + SIZE] !== l)) continue;
+      labels[i] = l; kept[l]++;
     }
-    return { size: SIZE, labels, regions };
+    for (let i = 0; i < N; i++) { const l = raw[i]; if (l && !kept[l]) labels[i] = l; }
+
+    const queue = new Int32Array(N);
+    let head = 0, tail = 0, levelEnd;
+    for (let i = 0; i < N; i++) if (labels[i]) queue[tail++] = i;
+    levelEnd = tail;
+    for (let level = 0, grow = Math.max(2, Math.round(SEAM * SIZE / 1024)); level < grow && head < tail; level++) {
+      for (; head < levelEnd; head++) {
+        const i = queue[head], l = labels[i], x = i % SIZE;
+        if (x > 0 && !labels[i - 1]) { labels[i - 1] = l; queue[tail++] = i - 1; }
+        if (x < SIZE - 1 && !labels[i + 1]) { labels[i + 1] = l; queue[tail++] = i + 1; }
+        if (i >= SIZE && !labels[i - SIZE]) { labels[i - SIZE] = l; queue[tail++] = i - SIZE; }
+        if (i < N - SIZE && !labels[i + SIZE]) { labels[i + SIZE] = l; queue[tail++] = i + SIZE; }
+      }
+      levelEnd = tail;
+    }
+    return labels;
+  }
+
+  /* Per-region tables, so a fill never scans the whole canvas:
+       pixels  every pixel index, in reading order
+       spans   the same pixels as [start, end) runs along each row: what fills actually use
+       x0…y1   bounding box */
+  function regionTable(labels, SIZE, count, extra) {
+    const N = SIZE * SIZE, px = new Uint32Array(count), runs = new Uint32Array(count);
+    for (let i = 0, prev = 0; i < N; i++) {
+      const l = labels[i];
+      if (i % SIZE === 0) prev = 0;
+      if (l) { px[l]++; if (l !== prev) runs[l]++; }
+      prev = l;
+    }
+    const regions = Array.from({ length: count }, (_, l) => Object.assign({ id: null, group: null }, extra(l),
+      { pixels: new Uint32Array(l ? px[l] : 0), spans: new Uint32Array(l ? runs[l] * 2 : 0), n: 0, x0: SIZE, y0: SIZE, x1: -1, y1: -1 }));
+    const at = new Uint32Array(count);
+    for (let i = 0, prev = 0; i < N; i++) {
+      const l = labels[i];
+      if (i % SIZE === 0) prev = 0;
+      if (l) {
+        const r = regions[l], x = i % SIZE, y = (i / SIZE) | 0;
+        r.pixels[r.n++] = i;
+        if (l !== prev) { r.spans[at[l]] = i; at[l] += 2; }
+        r.spans[at[l] - 1] = i + 1;
+        if (x < r.x0) r.x0 = x; if (x > r.x1) r.x1 = x;
+        if (y < r.y0) r.y0 = y; if (y > r.y1) r.y1 = y;
+      }
+      prev = l;
+    }
+    return regions;
+  }
+
+  // Colour one region into `u32`, a Uint32Array over the RGBA pixels of an image `width` wide
+  // whose top-left corner sits at (ox, oy) on the map. `rgba` comes from packColour().
+  function paintRegion(u32, width, map, l, rgba, ox, oy) {
+    const sp = map.regions[l].spans, S = map.size;
+    ox = ox || 0; oy = oy || 0;
+    for (let k = 0; k < sp.length; k += 2) {
+      const a = sp[k], y = (a / S) | 0, o = (y - oy) * width + (a - y * S - ox);
+      u32.fill(rgba, o, o + sp[k + 1] - a);
+    }
+  }
+  // "#rrggbb" as one opaque pixel in the byte order ImageData uses (little-endian: A B G R).
+  function packColour(hex) {
+    const [r, g, b] = hexToRgb(hex);
+    return (0xff000000 | (b << 16) | (g << 8) | r) >>> 0;
   }
 
   /* ── region map from a raster line-art image ──
      For illustrated pages delivered as pixels (Art.registerRaster). Each enclosed paper area
      becomes a region:
-       1. ink = dark pixels; the ink is thickened by GAP_CLOSE px first, so a hairline gap in the
-          drawing can't let one area leak into its neighbour;
-       2. connected paper areas are labelled; areas touching the canvas edge are "outside"
+       1. ink = pixels darker than INK. The lighter greys of an anti-aliased edge count as
+          paper and are coloured with their area, which is what makes the edge look smooth
+          under the multiply-blended line art;
+       2. the ink is thickened by GAP_CLOSE px first, so a hairline gap in the drawing can't
+          let one area leak into its neighbour;
+       3. connected paper areas are labelled; areas touching the canvas edge are "outside"
           (the frame drawn by tools/prep-raster.js keeps the padding out there) and areas
-          smaller than CRUMB px are treated as ink;
-       3. labels then grow outward under the ink, so a fill reaches right up to (and under)
-          the line and no white halo is left along it.
-     Labels are 32-bit: an illustrated page has hundreds of areas. Cached per image. */
-  const GAP_CLOSE = 2, CRUMB = 14;
+          smaller than CRUMB px are treated as ink, so they end up inside a neighbour;
+       4. labels then grow outward under the ink until they meet, so a fill runs under the
+          line to its middle and no white halo is left along it.
+     GAP_CLOSE and CRUMB are for a 1024 px map and scale with the map's size.
+     Each region also gets `host` (the area it met first while growing: its nearest neighbour)
+     and `inkGap` (how far it grew before meeting it: half the ink between them).
+     Labels are 32-bit: an illustrated page has hundreds of areas. The last few maps are
+     cached; a map is built in short steps so the screen stays responsive meanwhile. */
+  const GAP_CLOSE = 2, CRUMB = 14, CACHED_MAPS = 4;
   let INK = 150;   // grey level below which a pixel is ink
   const rasterCache = new Map();
   function buildRasterMap(src, size, gap) {
     gap = gap == null ? (RASTER_GAP[src] != null ? RASTER_GAP[src] : GAP_CLOSE) : gap;
     const key = src + '|' + (size || DEFAULT_SIZE) + '|' + gap + '|' + INK;
-    if (rasterCache.has(key)) return rasterCache.get(key);
+    if (rasterCache.has(key)) {
+      const hit = rasterCache.get(key);
+      rasterCache.delete(key); rasterCache.set(key, hit);   // most recently used last
+      return hit;
+    }
     const job = new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve(labelRaster(img, size || DEFAULT_SIZE, gap));
+      img.onload = () => labelRaster(img, size || DEFAULT_SIZE, gap).then(resolve, reject);
       img.onerror = reject;
       img.src = src;
     });
     rasterCache.set(key, job);
+    job.catch(() => rasterCache.delete(key));
+    // A map is ~10 MB; the title screen walks through every picture.
+    while (rasterCache.size > CACHED_MAPS) rasterCache.delete(rasterCache.keys().next().value);
     return job;
   }
   // Per-image gap closing, set by Art.registerRaster(key, src, { gap }) for art with looser lines.
   const RASTER_GAP = Object.assign({}, window.__rasterGap || {});   // set before the engine loaded
-  function labelRaster(img, SIZE, gapClose) {
+  // Building a map takes a few hundred ms on a phone. It hands the thread back every SLICE ms
+  // so taps and animation carry on (the title screen builds one for every picture it shows).
+  const SLICE = 12;
+  const breathe = () => new Promise(r => setTimeout(r, 0));
+  async function labelRaster(img, SIZE, gapClose) {
+    let sliceStart = performance.now();
+    const due = () => performance.now() - sliceStart > SLICE;
+    const pause = async () => { await breathe(); sliceStart = performance.now(); };
+    const scale = SIZE / 1024;
+    const passes = gapClose ? Math.max(1, Math.round(gapClose * scale)) : 0;
+    const crumb = Math.max(4, Math.round(CRUMB * scale * scale));
     const c = document.createElement('canvas');
     c.width = c.height = SIZE;
     const ctx = c.getContext('2d', { willReadFrequently: true });
@@ -164,87 +259,97 @@
     ctx.fillRect(0, 0, SIZE, SIZE);
     ctx.drawImage(img, 0, 0, SIZE, SIZE);
     const px = ctx.getImageData(0, 0, SIZE, SIZE).data, N = SIZE * SIZE;
+    const stack = new Int32Array(N);
 
-    // 1. ink, thickened to close hairline gaps
+    // 1. ink
     let ink = new Uint8Array(N);
     for (let i = 0, j = 0; i < N; i++, j += 4) ink[i] = px[j] < INK ? 1 : 0;
+    await pause();
     // "Outside" is decided on the ink as drawn, before it is thickened: the paper reachable from
     // the canvas edge. Otherwise the thickened frame swallows a few pixels just outside it and
     // fills would grow into them (a coloured fringe outside the picture's frame).
     const outside = new Uint8Array(N);
     {
-      const st = new Int32Array(N); let top = 0;
-      const seed = i => { if (!ink[i] && !outside[i]) { outside[i] = 1; st[top++] = i; } };
+      let top = 0;
+      const seed = i => { if (!ink[i] && !outside[i]) { outside[i] = 1; stack[top++] = i; } };
       for (let x = 0; x < SIZE; x++) { seed(x); seed((SIZE - 1) * SIZE + x); }
       for (let y = 0; y < SIZE; y++) { seed(y * SIZE); seed(y * SIZE + SIZE - 1); }
       while (top) {
-        const i = st[--top], x = i % SIZE;
+        const i = stack[--top], x = i % SIZE;
         if (x > 0) seed(i - 1); if (x < SIZE - 1) seed(i + 1);
         if (i >= SIZE) seed(i - SIZE); if (i < N - SIZE) seed(i + SIZE);
       }
     }
-    for (let pass = 0; pass < gapClose; pass++) {
+    if (due()) await pause();
+
+    // 2. thicken the ink to close hairline gaps
+    for (let pass = 0; pass < passes; pass++) {
       const out = ink.slice();
-      for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
-        const i = y * SIZE + x;
+      for (let i = 0; i < N; i++) {
         if (ink[i]) continue;
-        if ((x > 0 && ink[i - 1]) || (x < SIZE - 1 && ink[i + 1]) || (y > 0 && ink[i - SIZE]) || (y < SIZE - 1 && ink[i + SIZE])) out[i] = 1;
+        const x = i % SIZE;
+        if ((x > 0 && ink[i - 1]) || (x < SIZE - 1 && ink[i + 1]) || (i >= SIZE && ink[i - SIZE]) || (i < N - SIZE && ink[i + SIZE])) out[i] = 1;
       }
       ink = out;
+      if (due()) await pause();
     }
 
-    // 2. label paper areas (4-connected); -1 = outside, 0 = ink / crumb
-    const lab = new Int32Array(N), stack = new Int32Array(N), sizes = [0];
+    // 3. label paper areas (4-connected); -1 = outside, 0 = ink / crumb
+    const lab = new Int32Array(N), members = new Int32Array(N), sizes = [0];
     const OUT = -1;
     let next = 1;
     for (let s0 = 0; s0 < N; s0++) {
+      if ((s0 & 0x3fff) === 0 && due()) await pause();
       if (ink[s0] || lab[s0]) continue;
       let top = 0, n = 0, edge = false;
       const id = next;
       stack[top++] = s0; lab[s0] = id;
-      const members = [];
       while (top) {
-        const i = stack[--top]; n++; members.push(i);
-        const x = i % SIZE, y = (i / SIZE) | 0;
-        if (x === 0 || y === 0 || x === SIZE - 1 || y === SIZE - 1) edge = true;
+        const i = stack[--top];
+        members[n++] = i;
+        const x = i % SIZE;
+        if (x === 0 || x === SIZE - 1 || i < SIZE || i >= N - SIZE) edge = true;
         if (x > 0 && !ink[i - 1] && !lab[i - 1]) { lab[i - 1] = id; stack[top++] = i - 1; }
         if (x < SIZE - 1 && !ink[i + 1] && !lab[i + 1]) { lab[i + 1] = id; stack[top++] = i + 1; }
-        if (y > 0 && !ink[i - SIZE] && !lab[i - SIZE]) { lab[i - SIZE] = id; stack[top++] = i - SIZE; }
-        if (y < SIZE - 1 && !ink[i + SIZE] && !lab[i + SIZE]) { lab[i + SIZE] = id; stack[top++] = i + SIZE; }
+        if (i >= SIZE && !ink[i - SIZE] && !lab[i - SIZE]) { lab[i - SIZE] = id; stack[top++] = i - SIZE; }
+        if (i < N - SIZE && !ink[i + SIZE] && !lab[i + SIZE]) { lab[i + SIZE] = id; stack[top++] = i + SIZE; }
       }
-      if (edge) members.forEach(i => { lab[i] = OUT; });
-      else if (n < CRUMB) members.forEach(i => { lab[i] = 0; });
+      if (edge) for (let q = 0; q < n; q++) lab[members[q]] = OUT;
+      else if (n < crumb) for (let q = 0; q < n; q++) { lab[members[q]] = 0; ink[members[q]] = 1; }
       else { sizes.push(n); next++; }
     }
 
-    // 3. grow labels under the ink (multi-source BFS; never into "outside")
+    // 4. grow labels under the ink (multi-source BFS, one ring at a time; never into "outside")
     for (let i = 0; i < N; i++) if (outside[i] && lab[i] >= 0) lab[i] = -1;
-    let head = 0, tail = 0;
+    const host = new Int32Array(next), inkGap = new Uint16Array(next);
     const queue = stack;
+    let head = 0, tail = 0, level = 0;
     for (let i = 0; i < N; i++) if (lab[i] > 0) queue[tail++] = i;
+    let levelEnd = tail;
+    const visit = (j, l) => {
+      const v = lab[j];
+      if (v === 0) { lab[j] = l; queue[tail++] = j; }
+      else if (v > 0 && v !== l) {
+        if (!host[l]) { host[l] = v; inkGap[l] = level; }
+        if (!host[v]) { host[v] = l; inkGap[v] = level; }
+      }
+    };
     while (head < tail) {
+      if ((head & 0x3fff) === 0 && due()) await pause();
+      if (head === levelEnd) { level++; levelEnd = tail; }
       const i = queue[head++], l = lab[i], x = i % SIZE;
-      const visit = j => { if (lab[j] === 0) { lab[j] = l; queue[tail++] = j; } };
-      if (x > 0) visit(i - 1);
-      if (x < SIZE - 1) visit(i + 1);
-      if (i >= SIZE) visit(i - SIZE);
-      if (i < N - SIZE) visit(i + SIZE);
+      if (x > 0) visit(i - 1, l);
+      if (x < SIZE - 1) visit(i + 1, l);
+      if (i >= SIZE) visit(i - SIZE, l);
+      if (i < N - SIZE) visit(i + SIZE, l);
     }
+    if (due()) await pause();
 
     // Region table in the same shape buildRegionMap returns.
-    const labels = new Uint32Array(N), count = new Uint32Array(next);
-    for (let i = 0; i < N; i++) { const l = lab[i] > 0 ? lab[i] : 0; labels[i] = l; count[l]++; }
-    const regions = Array.from({ length: next }, (_, l) => ({ id: l ? 'area-' + l : null, group: null,
-      pixels: new Uint32Array(l ? count[l] : 0), n: 0, x0: SIZE, y0: SIZE, x1: -1, y1: -1 }));
-    for (let i = 0; i < N; i++) {
-      const l = labels[i];
-      if (!l) continue;
-      const r = regions[l];
-      r.pixels[r.n++] = i;
-      const x = i % SIZE, y = (i / SIZE) | 0;
-      if (x < r.x0) r.x0 = x; if (x > r.x1) r.x1 = x;
-      if (y < r.y0) r.y0 = y; if (y > r.y1) r.y1 = y;
-    }
+    const labels = new Uint32Array(N);
+    for (let i = 0; i < N; i++) if (lab[i] > 0) labels[i] = lab[i];
+    await pause();
+    const regions = regionTable(labels, SIZE, next, l => ({ id: l ? 'area-' + l : null, host: host[l], inkGap: inkGap[l] }));
     return { size: SIZE, labels, regions, raster: true, paperSizes: sizes };
   }
 
@@ -293,6 +398,11 @@
       scale: 1, tx: 0, ty: 0,
     };
     let anim = null, animFrame = 0, stroke = null;
+    // Fills are composed here before they reach the paint. Made once, up front: allocating a
+    // canvas inside a tap is what made big fills slow.
+    const scratch = h('canvas', { width: SIZE, height: SIZE });
+    const scratchCtx = scratch.getContext('2d', { willReadFrequently: true });
+    scratchCtx.clearRect(0, 0, 1, 1);
 
     function changed() { if (opts.onChange) opts.onChange(); }
 
@@ -351,24 +461,16 @@
       const reg = l && map.regions[l];
       if (!reg || !reg.n) return false;
       const bx = reg.x0, by = reg.y0, bw = reg.x1 - reg.x0 + 1, bh = reg.y1 - reg.y0 + 1;
-      const before = ctx.getImageData(bx, by, bw, bh);
+      pushHistory({ x: bx, y: by, w: bw, h: bh, before: ctx.getImageData(bx, by, bw, bh), after: null });
 
-      // Final pixels for the region's bounding box: the old pixels with the region recoloured.
-      const after = new ImageData(new Uint8ClampedArray(before.data), bw, bh);
-      const d = after.data, [cr, cg, cb] = hexToRgb(s.colour), px = reg.pixels;
-      for (let i = 0; i < reg.n; i++) {
-        const g = px[i], gy = (g / SIZE) | 0, o = ((gy - by) * bw + (g - gy * SIZE - bx)) * 4;
-        d[o] = cr; d[o + 1] = cg; d[o + 2] = cb; d[o + 3] = 255;
-      }
-      pushHistory({ x: bx, y: by, w: bw, h: bh, before, after: null });
-
-      // Reveal it as a quick ripple from the finger: draw `after` through a growing circle.
-      const layer = document.createElement('canvas');
-      layer.width = bw; layer.height = bh;
-      layer.getContext('2d').putImageData(after, 0, 0);
+      // The region alone, in the new colour, goes onto the scratch canvas, and from there onto
+      // the paint: first through a growing circle, a quick ripple from the finger.
+      const only = new ImageData(bw, bh);
+      paintRegion(new Uint32Array(only.data.buffer), bw, map, l, packColour(s.colour), bx, by);
+      scratchCtx.putImageData(only, bx, by);
       const far = Math.max(Math.hypot(x - bx, y - by), Math.hypot(x - bx - bw, y - by),
                            Math.hypot(x - bx, y - by - bh), Math.hypot(x - bx - bw, y - by - bh));
-      anim = { after, layer, x: bx, y: by, cx: x, cy: y, far, t0: performance.now() };
+      anim = { x: bx, y: by, w: bw, h: bh, cx: x, cy: y, far, t0: performance.now() };
       stepAnim();
       changed();
       return true;
@@ -394,7 +496,7 @@
       ctx.beginPath();
       ctx.arc(anim.cx, anim.cy, r, 0, Math.PI * 2);
       ctx.clip();
-      ctx.drawImage(anim.layer, anim.x, anim.y);
+      ctx.drawImage(scratch, anim.x, anim.y, anim.w, anim.h, anim.x, anim.y, anim.w, anim.h);
       ctx.restore();
       animFrame = requestAnimationFrame(stepAnim);
     }
@@ -402,7 +504,7 @@
     function finishAnim() {
       if (!anim) return;
       cancelAnimationFrame(animFrame);
-      ctx.putImageData(anim.after, anim.x, anim.y);
+      ctx.drawImage(scratch, anim.x, anim.y, anim.w, anim.h, anim.x, anim.y, anim.w, anim.h);
       anim = null;
     }
 
@@ -643,5 +745,5 @@
     };
   }
 
-  window.ColouringEngine = { create: createEngine, SIZE, matrixToRoot, buildRegionMap, buildRasterMap, RASTER_GAP, drawRegion, _setInk: v => { INK = v; } };
+  window.ColouringEngine = { create: createEngine, SIZE, matrixToRoot, buildRegionMap, buildRasterMap, RASTER_GAP, drawRegion, paintRegion, packColour, _setInk: v => { INK = v; } };
 })();

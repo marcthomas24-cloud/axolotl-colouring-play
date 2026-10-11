@@ -29,6 +29,35 @@
     return el;
   }
 
+  /* Action button for polished screens (docs/POLISH_BRIEF.md). variant: primary | secondary | icon.
+     primary: large, yellow, ink label, icon on the left; one per screen.
+     secondary: smaller; colour: pink | teal.
+     icon: round, 56px, no label; needs `ariaLabel`. colour is optional (white if left out). */
+  function actionButton(o) {
+    const variant = o.variant || 'secondary';
+    const colour = variant === 'primary' ? null : o.colour || (variant === 'secondary' ? 'pink' : null);
+    const cls = ['action-btn', 'action-btn-' + variant];
+    if (colour) cls.push('action-btn-' + colour);
+    if (o.className) cls.push(o.className);
+    const label = variant === 'icon' ? null : o.label;
+    const el = h('button', {
+      type: 'button',
+      class: cls.join(' '),
+      'aria-label': o.ariaLabel || o.label || o.icon,
+      'aria-pressed': o.pressed == null ? null : String(!!o.pressed),
+      disabled: o.disabled || null,
+      onClick: e => {
+        if (el.disabled) return;
+        if (o.to) go(o.to);
+        if (o.onClick) o.onClick(e);
+      },
+    },
+      o.icon ? icon(o.icon) : null,
+      label ? h('span', { class: 'btn-label' }, label) : null,
+    );
+    return el;
+  }
+
   /* Top bar: explicit back destination (never history.back — it could leave the app).
      Every screen gets an <h1>: the visible title, or `srTitle` for screen readers only. */
   function topBar(o) {
@@ -206,5 +235,5 @@
     if (pendingFlash) { toast(pendingFlash); pendingFlash = null; }
   }
 
-  window.UI = { go, button, topBar, screen, artCard, artStack, swatch, emptyState, toast, flash, onNavigate, modal, confirm, parentGate };
+  window.UI = { go, button, actionButton, topBar, screen, artCard, artStack, swatch, emptyState, toast, flash, onNavigate, modal, confirm, parentGate };
 })();
