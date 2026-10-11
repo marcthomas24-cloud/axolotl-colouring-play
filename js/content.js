@@ -2,7 +2,7 @@
   Content catalogue. Data only — screens never hard-code pages.
   Field set follows GDD §14, extended in Stage 2 (see ART_PIPELINE.md §4):
     id, title, category, sortOrder
-    category      a CATEGORIES id (easy, fun, friends, underwater, adventure, sports, halloween, village, odyssey).
+    category      a CATEGORIES id (easy, fun, friends, underwater, adventure, sports, halloween, christmas, village, odyssey).
     difficulty    1–3, purely visual (stars on the page card). Defaults from `complexity`.
     access        'free' | 'premium' — omitted = inherits from the category (see accessOf).
     tasterUnlock  optional { afterEasyCompletions: n }: a premium page that genuinely opens once the
@@ -162,6 +162,51 @@
     { id: 'ghost-costume', title: 'Ghost Costume', category: 'halloween', lineArt: 'final/ghost-costume', sortOrder: 78, complexity: 'medium' },
     { id: 'little-vampire', title: 'Little Vampire', category: 'halloween', lineArt: 'final/little-vampire', sortOrder: 79, complexity: 'medium' },
     { id: 'moonlight-castle', title: 'Moonlight Castle', category: 'halloween', lineArt: 'final/moonlight-castle', sortOrder: 80, complexity: 'medium' },
+    { id: 'easy-pumpkin', title: 'Happy Pumpkin', category: 'easy', lineArt: 'final/easy-pumpkin', sortOrder: 211, complexity: 'easy' },
+    { id: 'christmas-present', title: 'Christmas Present', category: 'christmas', lineArt: 'final/christmas-present', sortOrder: 81, complexity: 'easy' },
+    { id: 'christmas-tree', title: 'Christmas Tree', category: 'christmas', lineArt: 'final/christmas-tree', sortOrder: 82, complexity: 'easy' },
+    { id: 'candy-cane', title: 'Candy Cane', category: 'christmas', lineArt: 'final/candy-cane', sortOrder: 83, complexity: 'easy' },
+    { id: 'christmas-stocking', title: 'Christmas Stocking', category: 'christmas', lineArt: 'final/christmas-stocking', sortOrder: 84, complexity: 'easy' },
+    { id: 'snowman-friend', title: 'Snowman Friend', category: 'christmas', lineArt: 'final/snowman-friend', sortOrder: 85, complexity: 'easy' },
+    { id: 'christmas-star', title: 'Christmas Star', category: 'christmas', lineArt: 'final/christmas-star', sortOrder: 86, complexity: 'easy' },
+    { id: 'sleigh-ride', title: 'Sleigh Ride', category: 'christmas', lineArt: 'final/sleigh-ride', sortOrder: 87, complexity: 'medium' },
+    { id: 'ice-skating', title: 'Ice Skating', category: 'christmas', lineArt: 'final/ice-skating', sortOrder: 88, complexity: 'medium' },
+    { id: 'decorating-the-tree', title: 'Decorating the Tree', category: 'christmas', lineArt: 'final/decorating-the-tree', sortOrder: 89, complexity: 'medium' },
+    { id: 'penguin-hug', title: 'Penguin Hug', category: 'christmas', lineArt: 'final/penguin-hug', sortOrder: 90, complexity: 'medium' },
+    { id: 'reindeer-antlers', title: 'Reindeer Antlers', category: 'christmas', lineArt: 'final/reindeer-antlers', sortOrder: 91, complexity: 'medium' },
+    { id: 'snow-globe', title: 'Snow Globe', category: 'christmas', lineArt: 'final/snow-globe', sortOrder: 92, complexity: 'medium' },
+    { id: 'christmas-cottage', title: 'Christmas Cottage', category: 'christmas', lineArt: 'final/christmas-cottage', sortOrder: 93, complexity: 'advanced' },
+    { id: 'around-the-tree', title: 'Around the Tree', category: 'christmas', lineArt: 'final/around-the-tree', sortOrder: 94, complexity: 'advanced' },
+    { id: 'reef-sleigh', title: 'Reef Sleigh', category: 'christmas', lineArt: 'final/reef-sleigh', sortOrder: 95, complexity: 'advanced' },
+    { id: 'christmas-eve', title: 'Christmas Eve', category: 'christmas', lineArt: 'final/christmas-eve', sortOrder: 96, complexity: 'advanced' },
+    { id: 'christmas-market', title: 'Christmas Market', category: 'christmas', lineArt: 'final/christmas-market', sortOrder: 97, complexity: 'advanced' },
+    { id: 'tree-of-lights', title: 'Tree of Lights', category: 'christmas', lineArt: 'final/tree-of-lights', sortOrder: 98, complexity: 'advanced' },
+    { id: 'halloween-parade', title: 'Halloween Parade', category: 'halloween', lineArt: 'final/halloween-parade', sortOrder: 99, complexity: 'medium' },
+    { id: 'pumpkin-parade', title: 'Pumpkin Parade', category: 'halloween', lineArt: 'final/pumpkin-parade', sortOrder: 100, complexity: 'medium' },
+    { id: 'sweet-treats', title: 'Sweet Treats', category: 'halloween', lineArt: 'final/sweet-treats', sortOrder: 101, complexity: 'medium' },
+    { id: 'haunted-castle', title: 'Haunted Castle', category: 'halloween', lineArt: 'final/haunted-castle', sortOrder: 102, complexity: 'advanced' },
+    { id: 'ghost-treats', title: 'Ghost Treats', category: 'halloween', lineArt: 'final/ghost-treats', sortOrder: 103, complexity: 'medium' },
+    { id: 'vampire-night', title: 'Vampire Night', category: 'halloween', lineArt: 'final/vampire-night', sortOrder: 104, complexity: 'medium' },
+    { id: 'jellyfish-boo', title: 'Jellyfish Boo', category: 'halloween', lineArt: 'final/jellyfish-boo', sortOrder: 105, complexity: 'medium' },
+    { id: 'pumpkin-patch', title: 'Pumpkin Patch', category: 'halloween', lineArt: 'final/pumpkin-patch', sortOrder: 106, complexity: 'medium' },
+    { id: 'lantern-walk', title: 'Lantern Walk', category: 'halloween', lineArt: 'final/lantern-walk', sortOrder: 107, complexity: 'medium' },
+    { id: 'little-monster', title: 'Little Monster', category: 'halloween', lineArt: 'final/little-monster', sortOrder: 108, complexity: 'medium' },
+    { id: 'bat-wings', title: 'Bat Wings', category: 'halloween', lineArt: 'final/bat-wings', sortOrder: 109, complexity: 'medium' },
+    { id: 'sharing-treats', title: 'Sharing Treats', category: 'halloween', lineArt: 'final/sharing-treats', sortOrder: 110, complexity: 'medium' },
+    { id: 'pumpkin-costume', title: 'Pumpkin Costume', category: 'halloween', lineArt: 'final/pumpkin-costume', sortOrder: 111, complexity: 'medium' },
+    { id: 'witchs-cauldron', title: 'Witch\'s Cauldron', category: 'halloween', lineArt: 'final/witchs-cauldron', sortOrder: 112, complexity: 'medium' },
+    { id: 'witch-and-pumpkin', title: 'Witch and Pumpkin', category: 'halloween', lineArt: 'final/witch-and-pumpkin', sortOrder: 113, complexity: 'medium' },
+    { id: 'friendly-ghost', title: 'Friendly Ghost', category: 'halloween', lineArt: 'final/friendly-ghost', sortOrder: 114, complexity: 'medium' },
+    { id: 'count-axolotl', title: 'Count Axolotl', category: 'halloween', lineArt: 'final/count-axolotl', sortOrder: 115, complexity: 'medium' },
+    { id: 'pumpkin-hat', title: 'Pumpkin Hat', category: 'halloween', lineArt: 'final/pumpkin-hat', sortOrder: 116, complexity: 'medium' },
+    { id: 'castle-lookout', title: 'Castle Lookout', category: 'halloween', lineArt: 'final/castle-lookout', sortOrder: 117, complexity: 'medium' },
+    { id: 'pirate-treats', title: 'Pirate Treats', category: 'halloween', lineArt: 'final/pirate-treats', sortOrder: 118, complexity: 'medium' },
+    { id: 'halloween-party', title: 'Halloween Party', category: 'halloween', lineArt: 'final/halloween-party', sortOrder: 119, complexity: 'medium' },
+    { id: 'big-pumpkin', title: 'Big Pumpkin', category: 'halloween', lineArt: 'final/big-pumpkin', sortOrder: 120, complexity: 'medium' },
+    { id: 'bat-flight', title: 'Bat Flight', category: 'halloween', lineArt: 'final/bat-flight', sortOrder: 121, complexity: 'medium' },
+    { id: 'wizard-treats', title: 'Wizard Treats', category: 'halloween', lineArt: 'final/wizard-treats', sortOrder: 122, complexity: 'medium' },
+    { id: 'witchs-castle', title: 'Witch\'s Castle', category: 'halloween', lineArt: 'final/witchs-castle', sortOrder: 123, complexity: 'medium' },
+    { id: 'costume-party', title: 'Costume Party', category: 'halloween', lineArt: 'final/costume-party', sortOrder: 124, complexity: 'medium' },
   ].map(withDefaults).sort((a, b) => a.sortOrder - b.sortOrder);
   // Retired pages are out of the gallery, counts and unlocks, but still resolve by id so a picture already
   // coloured on one keeps opening (golden-glow, caravan: parked until Odyssey art matches the game).
@@ -230,8 +275,9 @@
     { id: 'adventure',  displayName: 'Adventure',  sortOrder: 5, access: 'premium', thumbnail: { page: 'explorer' },           icon: 'create', accentColour: '#ff9f45' },
     { id: 'sports',     displayName: 'Sports',     sortOrder: 6, access: 'premium', thumbnail: { page: 'football' },           icon: 'crown',  accentColour: '#4fd1b8' },
     { id: 'halloween',  displayName: 'Halloween',  sortOrder: 7, access: 'premium', thumbnail: { page: 'trick-or-treat' },     icon: 'pumpkin', accentColour: '#ff7a1a' },
-    { id: 'village',    displayName: 'Village',    sortOrder: 8, access: 'premium', thumbnail: { page: 'market' },             icon: 'home',   accentColour: '#c9a7ff' },
-    { id: 'odyssey',    displayName: 'Odyssey',    sortOrder: 9, access: 'premium', thumbnail: { page: 'odyssey' },            icon: 'gills',  accentColour: '#6fa8ff' },
+    { id: 'christmas',  displayName: 'Christmas',  sortOrder: 8, access: 'premium', thumbnail: { page: 'christmas-present' },  icon: 'tree',   accentColour: '#f0575c' },
+    { id: 'village',    displayName: 'Village',    sortOrder: 9, access: 'premium', thumbnail: { page: 'market' },             icon: 'home',   accentColour: '#c9a7ff' },
+    { id: 'odyssey',    displayName: 'Odyssey',    sortOrder: 10, access: 'premium', thumbnail: { page: 'odyssey' },           icon: 'gills',  accentColour: '#6fa8ff' },
   ].sort((a, b) => a.sortOrder - b.sortOrder);
   const getCategory = id => CATEGORIES.find(c => c.id === id) || null;
   // The pages in one category, in sortOrder (retired and Style Lab pages are never in PAGES).
