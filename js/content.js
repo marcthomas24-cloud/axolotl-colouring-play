@@ -263,6 +263,7 @@
        displayName   shown under the picture (secondary: the thumbnail and padlock do the talking)
        sortOrder     order in the picker; Easy first
        access        'free' | 'premium' (a premium category is a locked state only — no purchase flow yet)
+       testFree      optional, temporary: true opens every page in the category for a playtest, outside FREE_PAGE_LIMIT
        thumbnail     { page: <page id> } — drawn live from that page's line art; or { svg } later
        icon          a U.icon name, used on the category's page grid heading
        accentColour  the card's tint
@@ -275,7 +276,8 @@
     { id: 'adventure',  displayName: 'Adventure',  sortOrder: 5, access: 'premium', thumbnail: { page: 'explorer' },           icon: 'create', accentColour: '#ff9f45' },
     { id: 'sports',     displayName: 'Sports',     sortOrder: 6, access: 'premium', thumbnail: { page: 'football' },           icon: 'crown',  accentColour: '#4fd1b8' },
     { id: 'halloween',  displayName: 'Halloween',  sortOrder: 7, access: 'premium', thumbnail: { page: 'trick-or-treat' },     icon: 'pumpkin', accentColour: '#ff7a1a' },
-    { id: 'christmas',  displayName: 'Christmas',  sortOrder: 8, access: 'premium', thumbnail: { page: 'christmas-present' },  icon: 'tree',   accentColour: '#f0575c' },
+    // testFree: TEMPORARY, for the iPad playtest (2026-10-11) — opens the whole category outside the 12-free-page cap. Remove before release.
+    { id: 'christmas',  displayName: 'Christmas',  sortOrder: 8, access: 'premium', testFree: true, thumbnail: { page: 'christmas-present' }, icon: 'tree', accentColour: '#f0575c' },
     { id: 'village',    displayName: 'Village',    sortOrder: 9, access: 'premium', thumbnail: { page: 'market' },             icon: 'home',   accentColour: '#c9a7ff' },
     { id: 'odyssey',    displayName: 'Odyssey',    sortOrder: 10, access: 'premium', thumbnail: { page: 'odyssey' },           icon: 'gills',  accentColour: '#6fa8ff' },
   ].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -298,7 +300,7 @@
     if (over.length) console.warn(`Free-page cap (${FREE_PAGE_LIMIT}) exceeded — treated as premium: ${over.map(p => p.id).join(', ')}`);
     return new Set(all.slice(0, FREE_PAGE_LIMIT).map(p => p.id));
   })();
-  const accessOf = page => (configuredAccess(page) === 'free' && FREE_IDS.has(page.id) ? 'free' : 'premium');
+  const accessOf = page => ((getCategory(page.category) || {}).testFree || (configuredAccess(page) === 'free' && FREE_IDS.has(page.id)) ? 'free' : 'premium');
   // Where "Try another!" goes: the next page in the same category the child hasn't finished (wrapping),
   // among those they can open. `canOpen(page)` and `isDone(page)` come from the caller (Store).
   function nextPage(page, canOpen, isDone) {

@@ -175,7 +175,7 @@
     },
     // 'open' (free, or unlock-all) · 'peek' (premium, but at least one page opens) · 'locked'.
     categoryState(cat) {
-      if (state.settings.unlockAll || cat.access === 'free') return 'open';
+      if (state.settings.unlockAll || cat.access === 'free' || cat.testFree) return 'open';
       return Content.categoryPages(cat.id).some(p => this.isPageUnlocked(p)) ? 'peek' : 'locked';
     },
 

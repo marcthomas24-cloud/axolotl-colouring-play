@@ -3,11 +3,11 @@
 
   The picker is one big card per visible category (Content.CATEGORIES, in sortOrder; a category with no
   pages is hidden). It must work without reading: the thumbnail and the open / padlock bubble do the
-  talking, Easy is first and biggest. A premium category is a LOCKED STATE only — tapping it opens a calm
-  "coming soon, ask a grown-up" panel with one Close button; the only way on from there is a small grown-ups
-  link behind the parent gate, which leads to a placeholder (no purchase flow exists yet).
-  A premium category with an earned taster page ('peek') opens its grid, where the open pages are playable
-  and the rest are padlocks that raise the same calm panel.
+  talking, Easy is first and biggest. Every category opens its grid, locked or not, so the child can see
+  all its pictures (owner request, 2026-10-11). The lock is on the PICTURES: an open one is playable, a
+  locked one is a padlock, and tapping it raises a calm "coming soon, ask a grown-up" panel with one Close
+  button; the only way on from there is a small grown-ups link behind the parent gate, which leads to a
+  placeholder (no purchase flow exists yet).
 */
 (function () {
   'use strict';
@@ -23,10 +23,10 @@
   };
 
   /* ── the calm "coming soon" panel ── */
-  function showLocked(cat) {
+  function showLocked(cat, page) {   // page: the locked picture that was tapped (shown in the panel)
     const close = () => m.close();
     const m = UI.modal([
-      h('div', { class: 'locked-thumb', html: thumbFor(cat) }),
+      h('div', { class: 'locked-thumb', html: page ? UI.artStack(page.lineArt, null, page.title) : thumbFor(cat) }),
       h('div', { class: 'locked-lock' }, U.icon('lock')),
       h('h2', { class: 'modal-title' }, 'Coming soon!'),
       h('p', { class: 'modal-text' }, 'Ask a grown-up.'),
@@ -34,7 +34,7 @@
       // The only way to an unlock route: behind the parent gate, and it leads to a placeholder.
       h('button', { type: 'button', class: 'grownups-link', onClick: async () => { if (await UI.parentGate()) showUnlockPlaceholder(); } },
         U.icon('lock'), 'For grown-ups'),
-    ], { label: cat.displayName + ' — coming soon', onDismiss: close });
+    ], { label: (page ? page.title : cat.displayName) + ' — coming soon', onDismiss: close });
     m.card.classList.add('locked-card');
     m.card.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
     Sound.play('tap');
@@ -62,11 +62,8 @@
       type: 'button',
       class: 'cat-card' + (hero ? ' cat-hero' : '') + ' is-' + state,
       style: { '--accent': cat.accentColour },
-      'aria-label': `${cat.displayName}, ${pages.length} ${pages.length === 1 ? 'picture' : 'pictures'}` + (state === 'locked' ? ', coming soon' : state === 'peek' ? ', some pictures open' : ''),
-      onClick: () => {
-        if (state === 'locked') { Fx.restart(el, 'wiggle'); showLocked(cat); return; }
-        UI.go('gallery/' + cat.id);
-      },
+      'aria-label': `${cat.displayName}, ${pages.length} ${pages.length === 1 ? 'picture' : 'pictures'}` + (state === 'locked' ? ', locked pictures' : state === 'peek' ? ', some pictures open' : ''),
+      onClick: () => UI.go('gallery/' + cat.id),
     },
       h('div', { class: 'cat-frame', html: thumbFor(cat) }),
       // open (free) or padlock: the child's cue, no reading needed
@@ -110,7 +107,7 @@
         onClick: () => {
           if (unlocked) return UI.go('colour/' + page.id);
           Fx.restart(el, 'nope');      // locked: a gentle wiggle and the calm panel, never a dead end
-          showLocked(cat);
+          showLocked(cat, page);
         },
       });
       return el;
@@ -126,8 +123,8 @@
     showLocked,
     render(catId) {
       const cat = catId && Content.getCategory(catId);
-      // Unknown, hidden or fully locked category (e.g. a stale link): back to the picker.
-      if (cat && Content.categoryPages(cat.id).length && Store.categoryState(cat) !== 'locked') return renderCategory(cat);
+      // Unknown or hidden category (e.g. a stale link): back to the picker. A locked one still shows its pictures.
+      if (cat && Content.categoryPages(cat.id).length) return renderCategory(cat);
       if (catId) { Router.replace('gallery'); return null; }
       return renderPicker();
     },

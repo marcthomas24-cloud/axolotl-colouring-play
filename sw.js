@@ -6,7 +6,7 @@
 
   When adding a file to index.html, add it to FILES too and bump VERSION.
 */
-const VERSION = 'axolotl-colouring-v146';
+const VERSION = 'axolotl-colouring-v147';
 const FILES = [
   './',
   'index.html',

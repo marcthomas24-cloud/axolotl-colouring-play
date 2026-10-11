@@ -24,9 +24,9 @@
     render(pageId) {
       const page = Content.getPage(pageId);
       if (!page || !Store.isPageUnlocked(page)) {
-        // A locked or unknown page (e.g. a stale link): back to its pictures if some are open, else the picker.
+        // A locked or unknown page (e.g. a stale link): back to its category's pictures, else the picker.
         const cat = page && Content.getCategory(page.category);
-        Router.replace(cat && Store.categoryState(cat) !== 'locked' ? 'gallery/' + cat.id : 'gallery');
+        Router.replace(cat ? 'gallery/' + cat.id : 'gallery');
         return null;
       }
 
