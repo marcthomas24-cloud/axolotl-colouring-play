@@ -79,7 +79,7 @@
         floor: '#8a6a52', stalks: '#8fe07a', 'spore-cap-1': '#7fd3ff', 'spore-cap-2': '#7fd3ff', pebbles: '#ffd84a', 'inky-peek': '#3a3340',
         head: '#ffd84a', body: '#ffd84a', tail: '#ffd84a', 'fore-left': '#ffd84a', 'fore-right': '#ffd84a', 'hind-left': '#ffd84a',
         'hind-right': '#ffd84a', 'gill-left': '#ff9f45', 'gill-right': '#ff9f45' } },
-    { id: 'sandcastle', title: 'Sandcastle', category: 'friends', lineArt: 'final/sandcastle', sortOrder: 26, complexity: 'detailed', tasterUnlock: { afterEasyCompletions: 3 } },
+    { id: 'sandcastle', title: 'Sandcastle', category: 'friends', lineArt: 'final/sandcastle', sortOrder: 26, complexity: 'detailed' },   // was a taster until the 12-free-page cap (FREE_PAGE_LIMIT)
     { id: 'caravan', retired: true, title: 'Vermillion\'s Caravan', category: 'odyssey', lineArt: 'v4/caravan', sortOrder: 27,
       complexity: 'advanced', lineWeight: 5, characters: [], easterEggs: [{ what: 'Inky\'s eyes in the barrel' }, { what: 'Vermillion\'s shop sign' }],
       reference: { water: '#3d8bff', ceiling: '#9aa3ad', stalks: '#8fe07a', 'spore-cap': '#7fd3ff', silt: '#8a6a52',
@@ -284,8 +284,21 @@
   const categoryPages = id => PAGES.filter(p => p.category === id);
   // Categories the child can see: those with at least one page.
   const visibleCategories = () => CATEGORIES.filter(c => categoryPages(c.id).length);
-  // A page's access: its own `access`, else its category's. Unknown category → premium (never free by accident).
-  const accessOf = page => page.access || (getCategory(page.category) || { access: 'premium' }).access;
+  // A page's access as configured: its own `access`, else its category's. Unknown category → premium (never free by accident).
+  const configuredAccess = page => page.access || (getCategory(page.category) || { access: 'premium' }).access;
+  /* Owner rule (2026-10-11): at most FREE_PAGE_LIMIT pages open without a purchase, in all — free pages and
+     tasters together. The first FREE_PAGE_LIMIT count (free pages in category then page order, then tasters);
+     anything configured free or taster beyond that is treated as premium, so adding a page can never push the
+     free offer over the cap. To change which pages are free, edit the data, not this rule. */
+  const FREE_PAGE_LIMIT = 12;
+  const FREE_IDS = (() => {
+    const free = CATEGORIES.flatMap(cat => categoryPages(cat.id)).filter(p => configuredAccess(p) === 'free');
+    const tasters = PAGES.filter(p => configuredAccess(p) !== 'free' && p.tasterUnlock);
+    const all = free.concat(tasters), over = all.slice(FREE_PAGE_LIMIT);
+    if (over.length) console.warn(`Free-page cap (${FREE_PAGE_LIMIT}) exceeded — treated as premium: ${over.map(p => p.id).join(', ')}`);
+    return new Set(all.slice(0, FREE_PAGE_LIMIT).map(p => p.id));
+  })();
+  const accessOf = page => (configuredAccess(page) === 'free' && FREE_IDS.has(page.id) ? 'free' : 'premium');
   // Where "Try another!" goes: the next page in the same category the child hasn't finished (wrapping),
   // among those they can open. `canOpen(page)` and `isDone(page)` come from the caller (Store).
   function nextPage(page, canOpen, isDone) {
@@ -297,7 +310,7 @@
     return null;
   }
   // The Easy-completion threshold a premium page waits on, if it is a taster.
-  const tasterThreshold = page => (page.tasterUnlock && page.tasterUnlock.afterEasyCompletions) || 0;
+  const tasterThreshold = page => (FREE_IDS.has(page.id) && page.tasterUnlock && page.tasterUnlock.afterEasyCompletions) || 0;
 
   /* Stage 2 style experiments — one brief, five visual directions (js/pages-lab.js).
      A separate shelf: shown in the grown-ups' Style Lab, never in the children's gallery,
@@ -371,5 +384,5 @@
   // Dev builds (open the app with ?dev in the address) show art-review flags; a child's copy never does.
   const DEV = /[?&]dev(=|&|$)/.test((window.location && window.location.search) || '');
 
-  window.Content = { DEV, PAGES, LAB_PAGES, ALL_PAGES, CATEGORIES, getCategory, categoryPages, visibleCategories, accessOf, nextPage, tasterThreshold, PALETTE, COLOUR_NAMES, CREATE_OPTIONS, CHEERS, NAMES, getPage, artFor };
+  window.Content = { FREE_PAGE_LIMIT, DEV, PAGES, LAB_PAGES, ALL_PAGES, CATEGORIES, getCategory, categoryPages, visibleCategories, accessOf, nextPage, tasterThreshold, PALETTE, COLOUR_NAMES, CREATE_OPTIONS, CHEERS, NAMES, getPage, artFor };
 })();
